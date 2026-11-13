@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Meet Notebook",
+  "version": "1.3.0",
+  "description": "Private Google Meet recording and speaker-labelled transcript notebook.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "downloads",
+    "activeTab",
+    "storage",
+    "scripting",
+    "sidePanel",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Meet Notebook"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "commands": {
+    "open-notebook": {
+      "suggested_key": {
+        "default": "Alt+Shift+N"
+      },
+      "description": "Open Meet Notebook"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "lib/transcript.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
