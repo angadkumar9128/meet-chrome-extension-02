@@ -20,9 +20,21 @@
     if(paused)return;const r=region();if(!r)return;let newest=null;
     for(const b of blocks(r)){const l=lines(b);if(l.length<2)continue;const speaker=l[0].replace(/\s*\(you\)\s*$/i,'').trim();const text=l.slice(1).join(' ').trim();if(!speaker||!text||speaker.length>80)continue;newest={speaker,text};}
     if(!newest)return;
-    if(active&&active.speaker===newest.speaker)active.text=MeetNotebookTranscript.mergeRollingText(active.text,newest.text);
-    else{active={speaker:newest.speaker,text:newest.text,t:elapsed(),committed:false};entries.push(active);}
-    active.updatedAt=Date.now();clearTimeout(stableTimer);stableTimer=setTimeout(()=>{if(active)active.committed=true;publish();},650);publish();
+    const T=MeetNotebookTranscript;
+    if(active&&active.speaker===newest.speaker){
+      // Same speaker still talking: Meet keeps re-rendering (and re-recognising) the same words, so stitch, never append blindly.
+      const merged=T.mergeRollingText(active.text,newest.text);
+      if(merged===active.text)return;
+      active.text=merged;
+    }else{
+      // Speaker changed. If this speaker's previous caption is still on screen, continue their old entry instead of duplicating it.
+      let prev=null;
+      if(newest.text.split(/\s+/).length>=3){for(let i=entries.length-1;i>=Math.max(0,entries.length-6);i--){if(entries[i].speaker===newest.speaker){prev=entries[i];break;}}}
+      const info=prev?T.mergeInfo(prev.text,newest.text,{minOverlap:3}):null;
+      if(prev&&info.kind!=='none'){active=prev;if(info.text===prev.text)return;prev.text=info.text;}
+      else{active={speaker:newest.speaker,text:newest.text,t:elapsed(),committed:false};entries.push(active);}
+    }
+    active.committed=false;active.updatedAt=Date.now();clearTimeout(stableTimer);stableTimer=setTimeout(()=>{if(active)active.committed=true;publish();},650);publish();
   }
   function publish(){if(!sessionId)return;clearTimeout(publishTimer);publishTimer=setTimeout(()=>chrome.runtime.sendMessage({type:'TRANSCRIPT_UPDATE',sessionId,entries}).catch(()=>{}),180);}
   function attach(){const r=region();if(!r)return false;if(hideNativeCaptions)setCaptionVisibility(true);if(observer&&observedRegion===r)return true;observer?.disconnect();observedRegion=r;observer=new MutationObserver(scan);observer.observe(r,{childList:true,characterData:true,subtree:true});scan();return true;}

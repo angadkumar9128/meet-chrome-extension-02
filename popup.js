@@ -47,10 +47,11 @@ $('start').onclick = async () => {
   try {
     // Must be called here (user gesture from the popup)
     const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
-    const res = await chrome.runtime.sendMessage({ type: 'START', tabId: tab.id, streamId, myName });
+    const cfg = await chrome.storage.local.get(['quality', 'micGain', 'autoGain', 'enhanceMic', 'micDeviceId', 'hideMeetCaptions']);
+    const res = await chrome.runtime.sendMessage({ type: 'START', tabId: tab.id, streamId, myName, quality: cfg.quality || 'high', micGain: cfg.micGain ?? 2, autoGain: cfg.autoGain !== false, enhanceMic: cfg.enhanceMic !== false, micDeviceId: cfg.micDeviceId || null, hideMeetCaptions: cfg.hideMeetCaptions !== false });
     if (!res?.ok) throw new Error(res?.error || 'Failed to start');
     let note = 'Recording started.';
-    if (!res.micOk) note += ' Mic not allowed - only others will be heard.';
+    if (!res.micOk) note += ' Mic not available' + (res.micError ? ' (' + res.micError + ')' : '') + ' - only others will be heard. Use "Grant access" above.';
     if (!res.transcriptOk) note += ' Reload the Meet tab for transcript.';
     $('msg').textContent = note;
     render(await chrome.runtime.sendMessage({ type: 'GET_STATE' }));

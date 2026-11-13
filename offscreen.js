@@ -63,7 +63,21 @@ async function start(msg){
   tabStream=await navigator.mediaDevices.getUserMedia({audio:{mandatory:{chromeMediaSource:'tab',chromeMediaSourceId:msg.streamId}},video:{mandatory:{chromeMediaSource:'tab',chromeMediaSourceId:msg.streamId}}});
   const video=tabStream.getVideoTracks()[0];if(!video)throw new Error('Meet did not provide a video track.');video.contentHint='detail';
   try{await video.applyConstraints({width:{ideal:preset.width},height:{ideal:preset.height},frameRate:{ideal:30,max:30}});}catch(e){console.warn('Meet Notebook: capture constraints were not accepted.',e);}
-  let micOk=true;const micAudio={echoCancellation:true,noiseSuppression:enhanceMic,autoGainControl:true,channelCount:1};try{micStream=await navigator.mediaDevices.getUserMedia({audio:{...micAudio,...(msg.micDeviceId?{deviceId:{exact:msg.micDeviceId}}:{})}});}catch(firstError){if(msg.micDeviceId){try{micStream=await navigator.mediaDevices.getUserMedia({audio:micAudio});}catch(e){micOk=false;console.warn('Meet Notebook: microphone unavailable.',e);}}else{micOk=false;console.warn('Meet Notebook: microphone unavailable.',firstError);}}
+  let micOk=true,micError='';
+  const micAudio={echoCancellation:true,noiseSuppression:enhanceMic,autoGainControl:true,channelCount:1};
+  const attempts=[];
+  if(msg.micDeviceId)attempts.push({audio:{...micAudio,deviceId:{exact:msg.micDeviceId}}},{audio:{...micAudio,deviceId:{ideal:msg.micDeviceId}}});
+  attempts.push({audio:micAudio},{audio:true});
+  let lastError=null;
+  for(const constraints of attempts){
+    try{micStream=await navigator.mediaDevices.getUserMedia(constraints);lastError=null;break;}
+    catch(e){lastError=e;if(e&&e.name==='NotAllowedError')break;} // permission problems cannot be fixed by retrying other constraints
+  }
+  if(!micStream){
+    micOk=false;
+    micError=(lastError&&lastError.name?lastError.name:'Error')+(lastError&&lastError.message?': '+lastError.message:'');
+    console.warn('Meet Notebook: microphone unavailable ('+micError+'). Open the side panel Settings -> "Test microphone / grant access" and allow the microphone once.');
+  }
   audioContext=new AudioContext({sampleRate:48000});await audioContext.resume();
   const destination=audioContext.createMediaStreamDestination(),mixBus=audioContext.createGain(),limiter=audioContext.createDynamicsCompressor();
   limiter.threshold.value=-8;limiter.knee.value=8;limiter.ratio.value=10;limiter.attack.value=.003;limiter.release.value=.22;
@@ -87,7 +101,7 @@ async function start(msg){
   recorder.onstop=async()=>{const durationMs=Math.max(0,activeElapsedMs);try{await Promise.all(chunkWrites);const chunks=await readChunks();if(!chunks.length)throw new Error('No media chunks were saved.');let blob=new Blob(chunks.map(x=>x.blob),{type:chunks[0].type||mimeType});if(blob.type.includes('webm'))blob=await repairWebm(blob,durationMs);await saveVideo(blob);await clearChunks();videoUrl=URL.createObjectURL(blob);const result=await chrome.runtime.sendMessage({type:'VIDEO_READY',sessionId,mimeType:blob.type,url:videoUrl,size:blob.size,durationMs});if(!result||!result.ok)throw new Error(result&&result.error||'Video download failed.');}catch(err){chrome.runtime.sendMessage({type:'RECORDING_ERROR',sessionId,error:err.message}).catch(()=>{});}finally{cleanup();}};
   recorder.start(1000);segmentStartedAt=performance.now();
   video.addEventListener('ended',()=>{if(recorder&&recorder.state!=='inactive'){if(recorder.state==='recording'&&segmentStartedAt)activeElapsedMs+=performance.now()-segmentStartedAt;segmentStartedAt=0;recorder.stop();}},{once:true});
-  return {ok:true,micOk,mimeType,micGain:baseMicGain};
+  return {ok:true,micOk,micError,mimeType,micGain:baseMicGain};
 }
 function cleanup(){clearInterval(levelTimer);levelTimer=null;[tabStream,micStream].filter(Boolean).forEach(s=>s.getTracks().forEach(t=>t.stop()));tabStream=null;micStream=null;audioContext?.close();audioContext=null;recorder=null;micGainNode=null;micAnalyser=null;tabAnalyser=null;micData=null;tabData=null;sessionId=null;chunkWrites=[];segmentStartedAt=0;chrome.runtime.sendMessage({type:'AUDIO_LEVELS',mic:0,tab:0}).catch(()=>{});}
 chrome.runtime.onMessage.addListener((msg,_sender,reply)=>{if(msg.target!=='offscreen')return;(async()=>{try{

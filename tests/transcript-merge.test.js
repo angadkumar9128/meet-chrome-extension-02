@@ -15,3 +15,40 @@ test('plain text export puts every speaker turn in its own paragraph',()=>{
 test('plain text export removes accidental internal line breaks and spacing',()=>{
   assert.equal(formatPlainText([{speaker:' Speaker  One ',text:' first line\n   second   line '}]),'Speaker One - first line second line\n');
 });
+
+test('own-voice caption revisions do not duplicate text (Indep -> Independ, exp -> explain)',()=>{
+  const {mergeRollingText:m}=require('../lib/transcript.js');
+  const frames=[
+    'Indep.',
+    'Independ. Is there anything going on in this?',
+    'Independ. Is there anything going on in this? Okay, go ahead and tell what you think is. Can you exp?',
+    'Independent. Is there anything going on in this? Okay, go ahead and tell what you think is. Can you explain?',
+    'Is there anything going on in this? Okay, go ahead and tell what you think is. Can you explain indigator?',
+    'Is there anything going on in this? Okay, go ahead and tell what you think is. Can you explain indicator?'
+  ];
+  let t='';for(const f of frames)t=m(t,f);
+  assert.equal((t.match(/Is there anything/g)||[]).length,1);
+  assert.equal((t.match(/Can you/g)||[]).length,1);
+  assert.ok(/explain indicator\?$/.test(t));
+});
+test('a window whose early words were re-recognised is replaced, not appended',()=>{
+  const {mergeRollingText:m}=require('../lib/transcript.js');
+  assert.equal(m('so what do you think about the new schedule for','so what did you think about the new schedule for the team'),'so what did you think about the new schedule for the team');
+});
+test('genuinely new sentences are still appended',()=>{
+  const {mergeRollingText:m}=require('../lib/transcript.js');
+  assert.equal(m('We shipped the release.','Now let us talk about the roadmap.'),'We shipped the release. Now let us talk about the roadmap.');
+});
+test('mergeInfo reports contained text so a returning speaker does not start a new entry',()=>{
+  const {mergeInfo}=require('../lib/transcript.js');
+  assert.equal(mergeInfo('Is there anything going on in this? Okay go ahead and tell me','Is there anything going on in this?',{minOverlap:3}).kind,'contained');
+});
+test('on-device entries already covered by Meet captions are hidden',()=>{
+  const {filterAuxiliary}=require('../lib/transcript.js');
+  const out=filterAuxiliary([
+    {speaker:'You',text:'Is there anything going on in this',t:5,source:'meet'},
+    {speaker:'You (on-device)',text:'is there anything going on in this',t:6,source:'local-asr'},
+    {speaker:'You (on-device)',text:'completely different words that meet missed entirely',t:30,source:'local-asr'}
+  ],'');
+  assert.equal(out.length,2);
+});

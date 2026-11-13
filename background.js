@@ -39,7 +39,7 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
         const state={recording:true,paused:false,tabId:tab.id,sessionId,startedAt,segmentStartedAt:Date.now(),elapsedMs:0,myName:msg.myName||'You',code:codeFrom(tab.url),stamp:stamp(startedAt),quality:msg.quality||'high'};
         await setState(state);await chrome.storage.local.set({activeSessionId:sessionId,['transcript:'+sessionId]:[],pendingRecoverable:true});
         await chrome.action.setBadgeBackgroundColor({color:'#d93025'});await chrome.action.setBadgeText({text:'REC'});
-        reply({ok:true,micOk:capture.micOk,transcriptOk,sessionId});break;
+        reply({ok:true,micOk:capture.micOk,micError:capture.micError||'',transcriptOk,sessionId});break;
       }
       case 'STOP':reply(await stopRecording());break;
       case 'PAUSE':{
@@ -53,7 +53,7 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
         await chrome.tabs.sendMessage(s.tabId,{type:'RESUME_TRANSCRIPT'}).catch(()=>{});await setState({...s,paused:false,segmentStartedAt:Date.now()});reply({ok:true});break;
       }
       case 'GET_STATE':{reply(await getState());break;}
-      case 'GET_TRANSCRIPT':{const s=await getState();const id=msg.sessionId||s.sessionId;if(!id){reply({entries:[]});break;}const d=await chrome.storage.local.get('transcript:'+id);reply({entries:d['transcript:'+id]||[]});break;}
+      case 'GET_TRANSCRIPT':{const s=await getState();const id=msg.sessionId||s.sessionId;if(!id){reply({entries:[]});break;}const d=await chrome.storage.local.get('transcript:'+id);reply({entries:MeetNotebookTranscript.filterAuxiliary(d['transcript:'+id]||[],s.myName||'')});break;}
       case 'TRANSCRIPT_UPDATE':{
         const s=await getState();const id=msg.sessionId||s.sessionId;if(!id)throw new Error('No active meeting session.');
         const old=await chrome.storage.local.get('transcript:'+id);const entries=mergeWithAuxiliary(msg.entries||[],old['transcript:'+id]||[]);await chrome.storage.local.set({['transcript:'+id]:entries});await saveSession({...s,sessionId:id},entries,s.recording?'recording':s.finalizing?'finalizing':'saved');reply({ok:true});break;
