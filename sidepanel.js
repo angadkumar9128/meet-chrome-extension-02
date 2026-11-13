@@ -115,14 +115,14 @@ async function loadSessions(){
     const card=document.createElement('article');card.className='session';const title=document.createElement('strong');title.textContent=s.code||'Meet meeting';
     const meta=document.createElement('small');meta.textContent=new Date(s.startedAt).toLocaleString()+' · '+fmt(s.durationMs||0)+' · '+s.status;
     const dl=document.createElement('button');dl.textContent='Transcript';dl.onclick=()=>request('DOWNLOAD_TRANSCRIPT',{sessionId:s.id,format:'txt'}).catch(e=>$('status').textContent=e.message);
-    card.append(title,meta,dl);
+    card.append(title,meta,dl);const ai=document.createElement('button');ai.textContent='✦ Ask AI';ai.className='ai-session-button';ai.title='Summarize or ask questions about this meeting';ai.onclick=()=>chrome.tabs.create({url:chrome.runtime.getURL('ai.html')+'?sessionId='+encodeURIComponent(s.id)});card.append(ai);
     if(s.videoAvailable){const play=document.createElement('button');play.textContent='Play / seek';play.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view==='live'));['live','past','settings'].forEach(id=>$(id).hidden=id!=='live');sessionId=s.id;playback(s.id);};card.append(play);}
     const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{await request('DELETE_SESSION',{sessionId:s.id});await loadSessions();};card.append(del);root.append(card);
   }
 }
 async function settings(){
-  const s=await chrome.storage.local.get(['myName','quality','theme','micGain','autoGain','enhanceMic','localTranscription','captionLanguage']);
-  $('myName').value=s.myName||'';$('quality').value=s.quality||'high';$('theme').value=s.theme||'system';$('micGain').value=s.micGain??2;$('gainValue').textContent=(Number($('micGain').value)).toFixed(1)+'×';$('autoGain').checked=s.autoGain!==false;$('enhanceMic').checked=s.enhanceMic!==false;$('localTranscription').checked=s.localTranscription===true;$('captionLanguage').value=s.captionLanguage||'en-US';$('hideMeetCaptions').checked=s.hideMeetCaptions!==false;document.body.dataset.theme=s.theme==='system'?'':s.theme;
+  const s=await chrome.storage.local.get(['myName','quality','theme','micGain','autoGain','enhanceMic','localTranscription','captionLanguage','aiProvider','aiModel','aiApiKey']);
+  $('aiProvider').value=s.aiProvider||'gemini';$('aiModel').value=s.aiModel||'';$('aiApiKey').value=s.aiApiKey||'';$('myName').value=s.myName||'';$('quality').value=s.quality||'high';$('theme').value=s.theme||'system';$('micGain').value=s.micGain??2;$('gainValue').textContent=(Number($('micGain').value)).toFixed(1)+'×';$('autoGain').checked=s.autoGain!==false;$('enhanceMic').checked=s.enhanceMic!==false;$('localTranscription').checked=s.localTranscription===true;$('captionLanguage').value=s.captionLanguage||'en-US';$('hideMeetCaptions').checked=s.hideMeetCaptions!==false;document.body.dataset.theme=s.theme==='system'?'':s.theme;
 }
 $('micGain').oninput=()=>$('gainValue').textContent=Number($('micGain').value).toFixed(1)+'×';
 $('theme').onchange=()=>{document.body.dataset.theme=$('theme').value==='system'?'':$('theme').value;};
@@ -138,7 +138,7 @@ $('installSpeechPack').onclick=async()=>{
 };
 $('micSetup').onclick=()=>chrome.tabs.create({url:chrome.runtime.getURL('setup.html')});
 $('save').onclick=async()=>{
-  const s={myName:$('myName').value.trim(),quality:$('quality').value,theme:$('theme').value,micGain:Number($('micGain').value),autoGain:$('autoGain').checked,enhanceMic:$('enhanceMic').checked,localTranscription:$('localTranscription').checked,captionLanguage:$('captionLanguage').value,hideMeetCaptions:$('hideMeetCaptions').checked};
+  const s={aiProvider:$('aiProvider').value,aiModel:$('aiModel').value.trim(),aiApiKey:$('aiApiKey').value.trim(),myName:$('myName').value.trim(),quality:$('quality').value,theme:$('theme').value,micGain:Number($('micGain').value),autoGain:$('autoGain').checked,enhanceMic:$('enhanceMic').checked,localTranscription:$('localTranscription').checked,captionLanguage:$('captionLanguage').value,hideMeetCaptions:$('hideMeetCaptions').checked};
   await chrome.storage.local.set(s);document.body.dataset.theme=s.theme==='system'?'':s.theme;if(state.recording){const [activeTab]=await chrome.tabs.query({active:true,currentWindow:true});if(activeTab?.id)await chrome.tabs.sendMessage(activeTab.id,{type:'SET_CAPTION_VISIBILITY',hidden:s.hideMeetCaptions}).catch(()=>{});if(s.localTranscription){stopLocalAsr(false);await startLocalAsr(s.captionLanguage);}else stopLocalAsr(true);}$('status').textContent='Settings saved. Audio changes apply to the next recording.';
 };
 $('diagnostics').onclick=async()=>{try{const tab=await activeMeet();const r=await request('DIAGNOSE',{tabId:tab.id});if(!r.found)throw new Error('Meet captions were not found. Turn on CC.');await navigator.clipboard.writeText(r.html);$('status').textContent='Sanitized diagnostics copied.';}catch(e){$('status').textContent=e.message;}};

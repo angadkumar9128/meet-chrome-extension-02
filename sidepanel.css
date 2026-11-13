@@ -26,4 +26,4 @@ footer{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:10px;bord
 mark{background:#ffe69a;color:#202124}[hidden]{display:none!important}@keyframes pulse{50%{opacity:.3}}
 @media(prefers-color-scheme:dark){body:not([data-theme=light]):not([data-theme=dark]){color-scheme:dark;--bg:#181a1c;--panel:#22262a;--text:#e8eaed;--muted:#aab0b7;--line:#383e44;--soft:#263448}}
 body[data-theme=dark]{color-scheme:dark;--bg:#181a1c;--panel:#22262a;--text:#e8eaed;--muted:#aab0b7;--line:#383e44;--soft:#263448}
-body[data-theme=light]{color-scheme:light;--bg:#f7f9fc;--panel:#fff;--text:#202124;--muted:#687078;--line:#e2e6ec;--soft:#eaf1fb}
+body[data-theme=light]{color-scheme:light;--bg:#f7f9fc;--panel:#fff;--text:#202124;--muted:#687078;--line:#e2e6ec;--soft:#eaf1fb}\n.settings-section{margin:20px 0 4px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--text)}.ai-session-button{border-color:#cdd5ff!important;color:#4057db!important;background:#f2f4ff!important;font-weight:650}\n

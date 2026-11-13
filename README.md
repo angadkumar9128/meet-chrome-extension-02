@@ -37,3 +37,11 @@ No real Google Meet browser session, long-duration recording, multi-device micro
 
 ## Privacy
 Recordings, transcripts and microphone data remain in the local browser profile. The extension does not upload them to a server. Participants should be informed before recording.
+
+## Optional AI meeting assistant
+- Each past meeting has an **Ask AI** action that opens a dedicated tab for that meeting.
+- Generate a structured summary or ask questions grounded in the selected saved transcript.
+- Configure a personal provider key under **Settings → AI meeting assistant**. Supported providers: Google Gemini, Groq, xAI Grok and OpenAI.
+- API keys are saved in `chrome.storage.local` in the current browser profile. The transcript is transmitted to the chosen provider only after the user explicitly requests a summary or answer.
+- Provider free tiers, quotas and pricing are controlled by each provider and can change. Bring-your-own-key usage is not guaranteed to be unlimited or free.
+- Long transcripts are processed in sections before producing the final response.
