@@ -122,8 +122,34 @@ async function loadSessions(){
 }
 async function settings(){
   const s=await chrome.storage.local.get(['myName','quality','theme','micGain','autoGain','enhanceMic','localTranscription','captionLanguage','aiProvider','aiModel','aiApiKey']);
-  $('aiProvider').value=s.aiProvider||'gemini';$('aiModel').value=s.aiModel||'';$('aiApiKey').value=s.aiApiKey||'';$('myName').value=s.myName||'';$('quality').value=s.quality||'high';$('theme').value=s.theme||'system';$('micGain').value=s.micGain??2;$('gainValue').textContent=(Number($('micGain').value)).toFixed(1)+'×';$('autoGain').checked=s.autoGain!==false;$('enhanceMic').checked=s.enhanceMic!==false;$('localTranscription').checked=s.localTranscription===true;$('captionLanguage').value=s.captionLanguage||'en-US';$('hideMeetCaptions').checked=s.hideMeetCaptions!==false;document.body.dataset.theme=s.theme==='system'?'':s.theme;
+  $('myName').value=s.myName||'';$('quality').value=s.quality||'high';$('theme').value=s.theme||'system';$('micGain').value=s.micGain??2;$('gainValue').textContent=(Number($('micGain').value)).toFixed(1)+'×';$('autoGain').checked=s.autoGain!==false;$('enhanceMic').checked=s.enhanceMic!==false;$('localTranscription').checked=s.localTranscription===true;$('captionLanguage').value=s.captionLanguage||'en-US';$('hideMeetCaptions').checked=s.hideMeetCaptions!==false;document.body.dataset.theme=s.theme==='system'?'':s.theme;
 }
+
+const aiProviderInfo={
+ gemini:{label:'Gemini API key',placeholder:'Paste your Gemini API key here',url:'https://aistudio.google.com/app/apikey',link:'Get a Gemini API key ↗',help:'Google AI Studio → Create API key → copy it → paste it here. Check Google AI Studio for current free-tier availability and quotas.'},
+ groq:{label:'Groq API key',placeholder:'Paste your Groq API key here',url:'https://console.groq.com/keys',link:'Get a Groq API key ↗',help:'Groq Console → API Keys → Create API key → copy and paste it here. Free usage is subject to Groq limits.'},
+ xai:{label:'xAI API key',placeholder:'Paste your xAI API key here',url:'https://console.x.ai/',link:'Get an xAI API key ↗',help:'Open xAI Console → create an API key → copy and paste it here. Check model access and account billing.'},
+ openai:{label:'OpenAI API key',placeholder:'Paste your OpenAI API key here',url:'https://platform.openai.com/api-keys',link:'Get an OpenAI API key ↗',help:'OpenAI Platform → API keys → create a secret key → copy and paste it here. API billing is separate from ChatGPT subscriptions.'}
+};
+function updateAiProviderHelp(){
+ const info=aiProviderInfo[$('aiProvider').value]||aiProviderInfo.gemini;
+ $('aiKeyLabel').firstChild.textContent=info.label+' ';
+ $('aiApiKey').placeholder=info.placeholder;
+ $('aiKeyHelpLink').href=info.url;$('aiKeyHelpLink').textContent=info.link;
+ $('aiProviderHelp').textContent=info.help;
+ $('aiKeyStatus').textContent='';$('aiKeyStatus').className='ai-key-status';
+}
+$('aiProvider').addEventListener('change',updateAiProviderHelp);
+$('saveAiKey').onclick=async()=>{
+ const key=$('aiApiKey').value.trim();
+ if(!key){$('aiKeyStatus').textContent='Please paste your API key first.';$('aiKeyStatus').className='ai-key-status error';$('aiApiKey').focus();return;}
+ try{
+  await chrome.storage.local.set({aiProvider:$('aiProvider').value,aiModel:$('aiModel').value.trim(),aiApiKey:key});
+  $('aiKeyStatus').textContent='API key saved. Open Past meetings → Ask AI to get started.';
+  $('aiKeyStatus').className='ai-key-status success';
+ }catch(error){$('aiKeyStatus').textContent='Could not save API key: '+error.message;$('aiKeyStatus').className='ai-key-status error';}
+};
+
 $('micGain').oninput=()=>$('gainValue').textContent=Number($('micGain').value).toFixed(1)+'×';
 $('theme').onchange=()=>{document.body.dataset.theme=$('theme').value==='system'?'':$('theme').value;};
 $('installSpeechPack').onclick=async()=>{
@@ -138,7 +164,7 @@ $('installSpeechPack').onclick=async()=>{
 };
 $('micSetup').onclick=()=>chrome.tabs.create({url:chrome.runtime.getURL('setup.html')});
 $('save').onclick=async()=>{
-  const s={aiProvider:$('aiProvider').value,aiModel:$('aiModel').value.trim(),aiApiKey:$('aiApiKey').value.trim(),myName:$('myName').value.trim(),quality:$('quality').value,theme:$('theme').value,micGain:Number($('micGain').value),autoGain:$('autoGain').checked,enhanceMic:$('enhanceMic').checked,localTranscription:$('localTranscription').checked,captionLanguage:$('captionLanguage').value,hideMeetCaptions:$('hideMeetCaptions').checked};
+  const s={myName:$('myName').value.trim(),quality:$('quality').value,theme:$('theme').value,micGain:Number($('micGain').value),autoGain:$('autoGain').checked,enhanceMic:$('enhanceMic').checked,localTranscription:$('localTranscription').checked,captionLanguage:$('captionLanguage').value,hideMeetCaptions:$('hideMeetCaptions').checked};
   await chrome.storage.local.set(s);document.body.dataset.theme=s.theme==='system'?'':s.theme;if(state.recording){const [activeTab]=await chrome.tabs.query({active:true,currentWindow:true});if(activeTab?.id)await chrome.tabs.sendMessage(activeTab.id,{type:'SET_CAPTION_VISIBILITY',hidden:s.hideMeetCaptions}).catch(()=>{});if(s.localTranscription){stopLocalAsr(false);await startLocalAsr(s.captionLanguage);}else stopLocalAsr(true);}$('status').textContent='Settings saved. Audio changes apply to the next recording.';
 };
 $('diagnostics').onclick=async()=>{try{const tab=await activeMeet();const r=await request('DIAGNOSE',{tabId:tab.id});if(!r.found)throw new Error('Meet captions were not found. Turn on CC.');await navigator.clipboard.writeText(r.html);$('status').textContent='Sanitized diagnostics copied.';}catch(e){$('status').textContent=e.message;}};
@@ -146,4 +172,4 @@ chrome.storage.onChanged.addListener((changes,area)=>{
   if(area==='local'){const c=changes['transcript:'+sessionId];if(c){entries=c.newValue||[];render();}if(changes.tabAudioLevel)$('tabMeter').value=changes.tabAudioLevel.newValue||0;if(changes.micAudioLevel)$('micMeter').value=changes.micAudioLevel.newValue||0;}
   if(area==='session'&&changes.state){state={...state,...changes.state.newValue};sessionId=state.sessionId||sessionId;renderState();}
 });
-(async()=>{await settings();await refresh();if(state.recording&&!state.paused){const s=await chrome.storage.local.get(['localTranscription','captionLanguage']);if(s.localTranscription===true)await startLocalAsr(s.captionLanguage||'en-US');}})();
+(async()=>{await settings();updateAiProviderHelp();if(location.hash==='#settings'){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view==='settings'));['live','past','settings'].forEach(id=>$(id).hidden=id!=='settings');}await refresh();if(state.recording&&!state.paused){const s=await chrome.storage.local.get(['localTranscription','captionLanguage']);if(s.localTranscription===true)await startLocalAsr(s.captionLanguage||'en-US');}})();

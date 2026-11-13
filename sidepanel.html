@@ -62,6 +62,30 @@
     </main>
     <main id="past" hidden><div id="sessions"></div></main>
     <main id="settings" hidden>
+      <section class="ai-settings">
+        <h3>AI meeting assistant</h3>
+        <p class="hint">Connect your own AI account once. Then use Ask AI on any past meeting to summarize it or ask questions.</p>
+        <label>AI provider
+          <select id="aiProvider">
+            <option value="gemini">Google Gemini (recommended)</option>
+            <option value="groq">Groq</option>
+            <option value="xai">xAI Grok</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </label>
+        <label>Model name (optional)
+          <input id="aiModel" type="text" placeholder="Leave blank to use the default model">
+        </label>
+        <label id="aiKeyLabel">Gemini API key
+          <input id="aiApiKey" type="password" autocomplete="off" placeholder="Paste your Gemini API key here">
+        </label>
+        <p class="hint" id="aiProviderHelp">Open Google AI Studio, create an API key, copy it, and paste it above. Check the provider's current free-tier availability and quotas.</p>
+        <p class="hint">Setup: 1) Choose a provider. 2) Click the API-key link. 3) Create/copy your key. 4) Paste it here. 5) Click Save AI key. You can switch providers later.</p>
+        <p><a id="aiKeyHelpLink" href="https://aistudio.google.com/app/apikey" target="_blank">Get a Gemini API key ↗</a></p>
+        <button id="saveAiKey" class="primary" type="button">Save AI key</button>
+        <p id="aiKeyStatus" class="ai-key-status" role="status" aria-live="polite"></p>
+      </section>
+
       <label
         >Your name<input id="myName" placeholder="Your display name"
       /></label>
