@@ -1,4 +1,11 @@
-importScripts('lib/transcript.js');
+// Resolve the shared transcript helper from this extension's own package root.
+const transcriptScriptUrl = chrome.runtime.getURL('lib/transcript.js');
+try {
+  importScripts(transcriptScriptUrl);
+} catch (error) {
+  console.error('Meet Notebook: required file lib/transcript.js could not be loaded. Reinstall the complete extension folder; do not load a ZIP with a nested or incomplete folder.', transcriptScriptUrl, error);
+  throw error;
+}
 
 const getState=async()=>((await chrome.storage.session.get('state')).state)||{recording:false,paused:false,elapsedMs:0};
 const setState=state=>chrome.storage.session.set({state});
