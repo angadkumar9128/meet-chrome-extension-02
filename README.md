@@ -69,6 +69,35 @@ Meet Notebook is composed of several cooperating extension components. These are
 | Chrome Downloads API | Saves the finalized video and transcript export files to the user's Downloads location |
 | Optional AI provider APIs | Generate summaries and answer questions only after the user explicitly requests AI analysis |
 
+## Basic Architecture of Project Workings
+
+
+```mermaid
+flowchart TD
+    A[Google Meet tab] --> B[content.js]
+    B --> C[Meet caption capture]
+    C --> D[background.js service worker]
+    A --> E[Chrome tabCapture]
+    F[Optional microphone] --> G[Web Audio processing]
+    E --> G
+    G --> H[offscreen.js]
+    H --> I[MediaRecorder]
+    I --> J[IndexedDB chunks]
+    H --> K[Tab-only ASR]
+    H --> P[Mic-only ASR]
+    C --> Q[Meet speaker activity]
+    K --> L[Speaker attribution]
+    P --> L
+    Q --> L
+    D --> M[sidepanel.js]
+    C --> M
+    L --> M
+    J --> N[Finalized local recording]
+    M --> O[Playback, search, notes, exports]
+```
+
+
+
 ### Main recording and transcription flow
 
 ```text
