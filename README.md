@@ -45,3 +45,5 @@ Recordings, transcripts and microphone data remain in the local browser profile.
 - API keys are saved in `chrome.storage.local` in the current browser profile. The transcript is transmitted to the chosen provider only after the user explicitly requests a summary or answer.
 - Provider quotas and pricing are controlled by each provider and can change. Bring-your-own-key usage is not guaranteed to be unlimited or free. Groq and Claude model IDs can be discovered automatically when the model field is left blank.
 - Long transcripts are processed in sections before producing the final response.
+
+- **Fallback to ChatGPT or Claude:** The dedicated Ask AI page has one-click options to open the full meeting transcript in a new ChatGPT or Claude chat when API usage is unavailable. Shorter prompts are prefilled in the chat composer; longer transcripts are copied in full to the clipboard and the selected chat opens for pasting. The user reviews and submits the prompt themselves. Transcript text is included in the provider URL for prefilled links, so review sensitive content before using this option.
