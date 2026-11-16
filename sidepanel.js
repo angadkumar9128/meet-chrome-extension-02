@@ -122,13 +122,13 @@ async function loadSessions(){
 }
 async function settings(){
   const s=await chrome.storage.local.get(['myName','quality','theme','micGain','autoGain','enhanceMic','localTranscription','captionLanguage','aiProvider','aiModel','aiApiKey']);
-  $('myName').value=s.myName||'';$('quality').value=s.quality||'high';$('theme').value=s.theme||'system';$('micGain').value=s.micGain??2;$('gainValue').textContent=(Number($('micGain').value)).toFixed(1)+'×';$('autoGain').checked=s.autoGain!==false;$('enhanceMic').checked=s.enhanceMic!==false;$('localTranscription').checked=s.localTranscription===true;$('captionLanguage').value=s.captionLanguage||'en-US';$('hideMeetCaptions').checked=s.hideMeetCaptions!==false;document.body.dataset.theme=s.theme==='system'?'':s.theme;
+  $('myName').value=s.myName||'';$('quality').value=s.quality||'high';$('theme').value=s.theme||'system';$('micGain').value=s.micGain??2;$('gainValue').textContent=(Number($('micGain').value)).toFixed(1)+'×';$('autoGain').checked=s.autoGain!==false;$('enhanceMic').checked=s.enhanceMic!==false;$('localTranscription').checked=s.localTranscription===true;$('captionLanguage').value=s.captionLanguage||'en-US';$('hideMeetCaptions').checked=s.hideMeetCaptions!==false;$('aiProvider').value=s.aiProvider==='xai'?'gemini':(s.aiProvider||'gemini');$('aiModel').value=s.aiModel||'';document.body.dataset.theme=s.theme==='system'?'':s.theme;
 }
 
 const aiProviderInfo={
  gemini:{label:'Gemini API key',placeholder:'Paste your Gemini API key here',url:'https://aistudio.google.com/app/apikey',link:'Get a Gemini API key ↗',help:'Google AI Studio → Create API key → copy it → paste it here. Check Google AI Studio for current free-tier availability and quotas.'},
  groq:{label:'Groq API key',placeholder:'Paste your Groq API key here',url:'https://console.groq.com/keys',link:'Get a Groq API key ↗',help:'Groq Console → API Keys → Create API key → copy and paste it here. Free usage is subject to Groq limits.'},
- xai:{label:'xAI API key',placeholder:'Paste your xAI API key here',url:'https://console.x.ai/',link:'Get an xAI API key ↗',help:'Open xAI Console → create an API key → copy and paste it here. Check model access and account billing.'},
+ claude:{label:'Claude API key',placeholder:'Paste your Anthropic API key here',url:'https://console.anthropic.com/settings/keys',link:'Get a Claude API key ↗',help:'Anthropic Console → Settings → API keys → create a key → copy and paste it here. API usage and billing are separate from Claude subscriptions.'},
  openai:{label:'OpenAI API key',placeholder:'Paste your OpenAI API key here',url:'https://platform.openai.com/api-keys',link:'Get an OpenAI API key ↗',help:'OpenAI Platform → API keys → create a secret key → copy and paste it here. API billing is separate from ChatGPT subscriptions.'}
 };
 function updateAiProviderHelp(){
