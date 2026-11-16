@@ -41,7 +41,7 @@ Recordings, transcripts and microphone data remain in the local browser profile.
 ## Optional AI meeting assistant
 - Each past meeting has an **Ask AI** action that opens a dedicated tab for that meeting.
 - Generate a structured summary or ask questions grounded in the selected saved transcript.
-- Configure a personal provider key under **Settings → AI meeting assistant**. Supported providers: Google Gemini, Groq, xAI Grok and OpenAI.
+- Configure a personal provider key under **Settings → AI meeting assistant**. Supported providers: Google Gemini, Groq, Anthropic Claude and OpenAI.
 - API keys are saved in `chrome.storage.local` in the current browser profile. The transcript is transmitted to the chosen provider only after the user explicitly requests a summary or answer.
-- Provider free tiers, quotas and pricing are controlled by each provider and can change. Bring-your-own-key usage is not guaranteed to be unlimited or free.
+- Provider quotas and pricing are controlled by each provider and can change. Bring-your-own-key usage is not guaranteed to be unlimited or free. Groq and Claude model IDs can be discovered automatically when the model field is left blank.
 - Long transcripts are processed in sections before producing the final response.
